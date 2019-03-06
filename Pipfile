@@ -15,6 +15,7 @@ beautifulsoup4 = "*"
 py-trello = "*"
 openpyxl = "*"
 gunicorn = "*"
+ipdb = "*"
 
 [requires]
 python_version = "3.7"
