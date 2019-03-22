@@ -3,6 +3,7 @@ import httplib2
 import base64
 import os
 import io
+import sys
 
 from apiclient import discovery
 from oauth2client import client
@@ -10,14 +11,14 @@ from oauth2client import tools
 from oauth2client.file import Storage
 from apiclient.http import MediaFileUpload, MediaIoBaseDownload
 
-try:
-    import argparse
-    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
-except ImportError:
-    flags = None
+# try:
+#     import argparse
+#     flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
+# except ImportError:
+#     flags = None
 
 SCOPES = 'https://www.googleapis.com/auth/drive'
-CLIENT_SECRET_FILE = 'client_id.json'
+CLIENT_SECRET_FILE = os.path.join('./app/modules/ocr/', 'client_id.json')
 APPLICATION_NAME = 'Python OCR'
 
 
@@ -27,7 +28,7 @@ def get_credentials():
   
        傳回值：取得的憑證
     """
-    credential_path = os.path.join("./", 'google-ocr-credential.json')
+    credential_path = os.path.join("./app/modules/ocr/", 'google-ocr-credential.json')
     store = Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:
@@ -42,9 +43,9 @@ def get_credentials():
 
 
 def decodeBasse64(): 
-    pass
-    # with open("sample.jpg", "wb") as fh:
-    #     fh.write(base64.decodebytes(img_data))
+    img_data = sys.argv[1].encode('ascii')
+    with open(os.path.join('./app/modules/ocr/', 'sample.jpg'), "wb") as fh:
+        fh.write(base64.decodebytes(img_data))
 
 
 def main():
@@ -56,11 +57,10 @@ def main():
     service = discovery.build('drive', 'v3', http=http)
   
     # 包含文字內容的圖片檔案（png、jpg、bmp、gif、pdf）
-    imgfile = 'sample.jpg'
-    # imgfile = 'base'
+    imgfile = os.path.join('./app/modules/ocr/', 'sample.jpg')
   
     # 輸出辨識結果的文字檔案
-    txtfile = 'output.txt'
+    txtfile = os.path.join('./app/modules/ocr/', 'output.txt')
   
     # 上傳成 Google 文件檔，讓 Google 雲端硬碟自動辨識文字
     mime = 'application/vnd.google-apps.document'
@@ -83,6 +83,9 @@ def main():
   
     # 刪除剛剛上傳的 Google 文件檔案
     service.files().delete(fileId=res['id']).execute()
+
+def OCR():
+    main()
 
 
 if __name__ == '__main__':

@@ -83,6 +83,12 @@ class ParseIncoming():
         if (self.text):
             return self.text.startswith('test ', 0, 5)
 
+    @property
+    def isOCR(self):
+        if (self.text):
+            return self.text.startswith('OCR ', 0, 4)
+
+
     def getLunch(self):
         return random.choice(lunch_pool)
 

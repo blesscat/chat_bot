@@ -1,6 +1,8 @@
+import os
 import random
 import time
 import requests
+import subprocess
 from flask import request, render_template, jsonify
 from sqlalchemy.sql import func
 
@@ -32,6 +34,23 @@ def Post(method, data):
     r = requests.post(HTTP, data=data)
     print(r.text)
     return r.json()
+
+
+def Ocr(incom):
+    base64 = incom.text[4:]
+    subprocess.call(['bash', 'ocr.sh', base64])
+
+    with open(os.path.join('./app/modules/ocr/', 'output.txt'), "r") as f:
+        res = f.read()
+    print(res)
+
+    data = {
+        'chat_id': incom.chat_id,
+        'reply_to_message_id': incom.message_id,
+        'text': res
+    }
+    
+    Post('sendMessage', data)
 
 
 def postLunch(incom):
@@ -149,10 +168,27 @@ def telegram():
         
     elif incoming.isDrawLots:
         drawLots(incoming)
+    elif incoming.isOCR:
+        Ocr(incoming)
     elif incoming.isTest:
         Test(incoming)
 
     return ''
+
+
+@app.route("/ocr", methods=['GET', 'POST'])
+def useOCR():
+    if request.method == 'GET':
+        launch = db_models.Launch.query.all()
+        pool = [i.to_json() for i in launch]
+        return render_template('setLaunch.html', my_list=pool)
+    
+    # subprocess.call(['bash', 'ocr.sh', base64])
+
+    # with open(os.path.join('./app/modules/ocr/', 'output.txt'), "r") as f:
+    #     res = f.read()
+    # print(res)
+    # 
 
 
 @app.route("/setWebhook", methods=['GET'])
