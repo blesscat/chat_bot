@@ -5,14 +5,17 @@ from copy import copy
 import datetime
 import re
 
-blessId = '5bff57cb3b4c0b21262eabc6'
-owenId = '5bff594d317049461251056e'
-claraId = '54b3636bb2b9ce3343113869'
-wilsonId = '5c2c5edca9970548e6e9b78e'
-sunnyId = '5adc58e6bed38687f94a7fb5'
-howardId = '5c6ce68c093e2182061dceb3'
-
-members = [blessId, owenId, claraId, wilsonId, sunnyId, howardId]
+blessID = '5bff57cb3b4c0b21262eabc6'
+owenID = '5bff594d317049461251056e'
+claraID = '54b3636bb2b9ce3343113869'
+wilsonID = '5c2c5edca9970548e6e9b78e'
+sunnyID = '5adc58e6bed38687f94a7fb5'
+howardID = '5c6ce68c093e2182061dceb3'
+maxID = '5c9b0ab20a49cc6f877b10ae'
+whiteID = '5a6d4a5185c4f78a053fb5b1'
+ 
+members = [blessID, owenID, claraID, wilsonID,
+           whiteID, sunnyID, howardID, maxID]
 
 key = 'd19356dd8fdeb53226fc5e3fd4f3ab1b'
 secret = 'b8f25dfe09f13a2ab3318ed14692a1d8f8aad9a1db4c5183021ae9aa5b77fa23'
@@ -48,7 +51,10 @@ def findInAllBoards(client, nameList, id, percentage):
                     if id in card.member_id:
 
                         if percentage:
-                            percent = calPercentage(card)
+                            if lis.name == '進行中':
+                                percent = calPercentage(card)
+                            else:
+                                percent = '100.00%'
                         else:
                             percent = ''
 
