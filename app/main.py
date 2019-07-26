@@ -11,8 +11,12 @@ from .modules import db_models
 from .modules import lots_pool
 from .modules.parse_incoming import ParseIncoming
 
-blessId = 461302625
-owenId = 574164683
+bless = 461302625
+owen = 574164683
+nordy = 558029648
+
+# banList = [owen, nordy]
+banList = []
 
 
 def Test(incom):
@@ -42,7 +46,6 @@ def Ocr(incom):
 
     with open(os.path.join('./app/modules/ocr/', 'output.txt'), "r") as f:
         res = f.read()
-    print(res)
 
     data = {
         'chat_id': incom.chat_id,
@@ -52,9 +55,15 @@ def Ocr(incom):
     
     Post('sendMessage', data)
 
+def DelMsg(incom):
+    data = {
+        'chat_id': incom.chat_id,
+        'message_id': incom.message_id,
+    }
+    Post('deleteMessage', data)     
 
-def postLunch(incom):
-    launch = db_models.Launch.query.all()
+
+def postLunch(incom, launch):
     choice = random.choice(launch)
 
     data = {
@@ -72,22 +81,6 @@ def postLunch(incom):
     }
     Post('sendLocation', data)
 
-
-def postLunch_bak(incom):
-    # if incom.from_id == 574164683:
-    #     data = {
-    #         'chat_id': incom.chat_id,
-    #         'reply_to_message_id': incom.message_id,
-    #         'text': '我不要跟你說話'
-    #     }
-    #     Post('sendMessage', data)
-    # else:
-    data = {
-        'chat_id': incom.chat_id,
-        'text': incom.getLunch(),
-        'reply_to_message_id': incom.message_id
-    }
-    Post('sendMessage', data)
 
 def drawLots(incom):
     choice = random.choice(lots_pool.lots_pool)
@@ -151,7 +144,11 @@ def telegram():
     incoming = ParseIncoming(request.get_json())
 
     if incoming.isLunch:
-        postLunch(incoming)
+        launch = db_models.Launch.query.all()
+        postLunch(incoming, launch)
+    elif incoming.gqLunch:
+        launch = db_models.GqLaunch.query.all()
+        postLunch(incoming, launch)
     elif incoming.isDraw:
         postDraw(incoming)
     elif incoming.isJavaCat:
@@ -170,25 +167,26 @@ def telegram():
         drawLots(incoming)
     elif incoming.isOCR:
         Ocr(incoming)
-    elif incoming.isTest:
-        Test(incoming)
+    elif incoming.from_id in banList:
+        if incoming.isSticker or incoming.isDoc:
+            DelMsg(incoming)
+    # elif incoming.isTest:
+    #     Test(incoming)
 
     return ''
 
 
-@app.route("/ocr", methods=['GET', 'POST'])
+@app.route("/ocr", methods=['POST'])
 def useOCR():
-    if request.method == 'GET':
-        launch = db_models.Launch.query.all()
-        pool = [i.to_json() for i in launch]
-        return render_template('setLaunch.html', my_list=pool)
-    
-    # subprocess.call(['bash', 'ocr.sh', base64])
+    img = request.get_json()['img']
+    if not img:
+        return 'no data'
 
-    # with open(os.path.join('./app/modules/ocr/', 'output.txt'), "r") as f:
-    #     res = f.read()
-    # print(res)
-    # 
+    subprocess.call(['bash', 'ocr.sh', img])
+    with open(os.path.join('./app/modules/ocr/', 'output.txt'), "r") as f:
+        res = f.read()
+    
+    return res
 
 
 @app.route("/setWebhook", methods=['GET'])
@@ -196,12 +194,28 @@ def setWebhook():
     return app.send_static_file('setWebhook.html')
 
 
+@app.route("/gqLaunch", methods=['GET', 'POST'])
+def gqLaunch():
+    if request.method == 'GET':
+        launch = db_models.GqLaunch.query.all()
+        pool = [i.to_json() for i in launch]
+        return render_template('setLaunch.html', my_list=pool, address='gqLaunch')
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        launch = db_models.GqLaunch(
+            data['name'], data['latitude'], data['longitude'])
+        db.session.add(launch)
+        db.session.commit()
+
+        return jsonify({'res': 'success'})
+
 @app.route("/setLaunch", methods=['GET', 'POST'])
 def setLaunch():
     if request.method == 'GET':
         launch = db_models.Launch.query.all()
         pool = [i.to_json() for i in launch]
-        return render_template('setLaunch.html', my_list=pool)
+        return render_template('setLaunch.html', my_list=pool, address='setLaunch')
 
     elif request.method == 'POST':
         data = request.get_json()

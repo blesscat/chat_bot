@@ -84,6 +84,10 @@ def main():
     # 刪除剛剛上傳的 Google 文件檔案
     service.files().delete(fileId=res['id']).execute()
 
+    with open(os.path.join('./app/modules/ocr/', 'output.txt'), "r") as f:
+        res = f.read()
+    print(res)
+
 def OCR():
     main()
 

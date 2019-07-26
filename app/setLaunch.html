@@ -30,7 +30,7 @@
         <br/>
         <div class="control is-grouped">
           <p class="control">
-            <button class="button is-primary" @click="setLaunch" :disabled="loading">Set Launch</button>
+            <button class="button is-primary" @click="setLaunch" :disabled="loading">新增</button>
           </p>
         </div>
         <br/>
@@ -50,6 +50,7 @@
   </div>
   <script>
     const Launchs = {{ my_list|tojson|safe }}
+    const address = '{{ address }}'
     
     new Vue({
       el: '#app',
@@ -69,7 +70,7 @@
       methods: {
         async setLaunch() {
 	  this.loading = true
-          const res = await fetch('http://192.168.0.147:5000/setLaunch', {
+		const res = await fetch(`http://frontend.com:5000/${address}`, {
             headers: { 'content-type': 'application/json' },
             method: 'POST',
             body: JSON.stringify({ 

@@ -17,18 +17,42 @@ class ParseIncoming():
             return self.data['update_id']
 
     @property
+    def document(self):
+        if ('document' in self.message):
+            return self.message['document']
+        return {}
+
+    @property
+    def sticker(self):
+        if ('sticker' in self.message):
+            return self.message['sticker']
+        return False
+
+    @property
+    def photo(self):
+        if ('photo' in self.message):
+            return self.message['photo']
+        return {}
+
+    @property
+    def video(self):
+        if ('video' in self.message):
+            return self.message['video']
+        return {}
+
+    @property
     def from_id(self):
         if('from' in self.message):
             return self.message['from']['id']
 
     @property
     def chat(self):
-        if('chat' in self.message):
+        if ('chat' in self.message):
             return self.message['chat']
 
     @property
     def message_id(self):
-        if('message_id' in self.message):
+        if ('message_id' in self.message):
             return self.message['message_id']
 
     @property
@@ -47,11 +71,30 @@ class ParseIncoming():
         if ('text' in self.message):
             return self.message['text']
         return {}
+    
+    @property
+    def isMp4(self):
+        if ('mime_type' in self.document) :
+            return self.document['mime_type'] == 'video/mp4'
+
+
+    @property
+    def isDoc(self):
+        return bool(self.document) or bool(self.photo) or bool(self.video)
+
+    @property
+    def isSticker(self):
+        return bool(self.sticker)
 
     @property
     def isLunch(self):
         if (self.text):
-            return self.text.startswith('中午吃什麼', 0, 5)
+            return self.text.startswith('西湖吃什麼', 0, 5)
+
+    @property
+    def gqLunch(self):
+        if (self.text):
+            return self.text.startswith('港墘吃什麼', 0, 5)
 
     @property
     def isDraw(self):
@@ -87,7 +130,6 @@ class ParseIncoming():
     def isOCR(self):
         if (self.text):
             return self.text.startswith('OCR ', 0, 4)
-
 
     def getLunch(self):
         return random.choice(lunch_pool)

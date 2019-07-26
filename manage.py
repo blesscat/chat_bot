@@ -26,7 +26,8 @@ def updateWebhook(url):
 
 @manager.shell
 def make_shell_context():
-    return dict(app=app, db=db, Beauty=db_models.Beauty, Launch=db_models.Launch)
+    return dict(app=app, db=db, Beauty=db_models.Beauty,
+                Launch=db_models.Launch, gq=db_models.GqLaunch)
 
 
 manager.add_command('update-beauty', BeautyCrawler())
