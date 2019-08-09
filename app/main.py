@@ -15,8 +15,8 @@ bless = 461302625
 owen = 574164683
 nordy = 558029648
 
-# banList = [owen, nordy]
-banList = []
+banList = [owen, nordy]
+# banList = []
 
 
 def Test(incom):

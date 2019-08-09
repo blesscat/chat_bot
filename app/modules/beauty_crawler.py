@@ -1,5 +1,9 @@
 import re
 import requests
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
 from bs4 import BeautifulSoup
 from flask_script import Command
 
@@ -14,38 +18,51 @@ class BeautyCrawler(Command):
             db.session.delete(i)
         db.session.commit()
 
-    def findAllLinks(self, soup):
+    def findAllPicAndPutIntoDB(self, link):
+        # import ipdb; ipdb.set_trace()
+        element = self.driver.find_element_by_css_selector('a[href^="{}"]'.format(link))
+        element.click()
+        links = self.driver.find_elements_by_css_selector('a[href]')
+        target = re.compile('https:.*imgur\.com\/.*')
+        for link in links:
+            href = link.get_attribute('href')
+            if target.match(href):
+                print(href)
+                beauty = db_models.Beauty(href)
+                db.session.add(beauty)
+        
+        self.driver.back()
+
+    def findAllLinks(self):
         links = []
-        for link in soup.findAll('div', {'class': 'title'}):
-            for a in link.findAll('a'):
-                links.append(a.get('href'))
+        for block in self.driver.find_elements_by_class_name('title'):
+            for a in block.find_elements_by_css_selector('a[href]'):
+                links.append(a.get_attribute('href').replace('https://www.ptt.cc', ''))
         return links
 
-    def run(self):
-        self.cleanBeauty()
+    def crawler(self):
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
 
-        res = requests.get('https://www.ptt.cc/bbs/Beauty/index.html')
-        soup = BeautifulSoup(res.text, 'html.parser')
+        self.driver = webdriver.Chrome(chrome_options=chrome_options,
+                                  executable_path='/usr/local/bin/chromedriver')
+        base_url = 'https://www.ptt.cc/bbs/Beauty/index.html'
+        self.driver.get(base_url)
         
-        prevRe = r'\/bbs\/Beauty\/index[0-9]{2,}.html'
-        prev = soup.find('a', {'href': re.compile(prevRe)})
-
-        res = requests.get('https://www.ptt.cc{}'.format(prev.get('href')))
-        soup = BeautifulSoup(res.text, 'html.parser')
-
-        links = self.findAllLinks(soup)
+        self.driver.find_element_by_xpath("//button[@value='yes']").click()
+        self.driver.find_element_by_xpath("//*[contains(text(),'上頁')]").click()
+        
+        links = self.findAllLinks()
 
         for link in links:
-            url = 'https://www.ptt.cc{}'.format(link)
-            res = requests.get(url)
-            soup = BeautifulSoup(res.text, 'html.parser')
+            self.findAllPicAndPutIntoDB(link)
 
-            target = r'https:.*imgur\.com\/.*'
-            for a in soup.findAll('a', {'href': re.compile(target)}):
-                print(a.get('href'))
-                beauty = db_models.Beauty(a.get('href'))
-                db.session.add(beauty)
-
+        self.driver.close()
+#
+    def run(self):
+        self.cleanBeauty()
+        self.crawler()
         db.session.commit()
 
 
