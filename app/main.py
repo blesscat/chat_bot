@@ -9,14 +9,15 @@ from sqlalchemy.sql import func
 from . import app, db, TOKEN, DEV_TOKEN
 from .modules import db_models
 from .modules import lots_pool
+from .modules import tg_group
 from .modules.parse_incoming import ParseIncoming
 
 bless = 461302625
 owen = 574164683
 nordy = 558029648
 
-banList = [owen, nordy]
-# banList = []
+# banList = [owen, nordy]
+banList = []
 
 
 def Test(incom):
@@ -174,6 +175,34 @@ def telegram():
     #     Test(incoming)
 
     return ''
+
+
+@app.route("/message", methods=['POST'])
+def message():
+    incom = request.get_json()
+    print('chat_name')
+    
+    if incom:
+        if incom['chat_name']:
+            chat_id = tg_group.name[incom['chat_name']]
+        else :
+            chat_id = incom['chat_id']
+        data = {
+            'chat_id': chat_id,
+            'text': incom['text']
+        } 
+    else:
+        if request.form.get('chat_name'):
+            chat_id = tg_group.name[request.form.get('chat_name')]
+        else :
+            chat_id = request.form.get('chat_id')
+        data = {
+            'chat_id': chat_id,
+            'text': request.form.get('text')
+        } 
+
+    Post('sendMessage', data)
+    return jsonify({'res': 'success'})
 
 
 @app.route("/ocr", methods=['POST'])
