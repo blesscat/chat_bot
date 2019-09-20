@@ -1,4 +1,5 @@
 import os
+import re
 import random
 import time
 import requests
@@ -11,6 +12,9 @@ from .modules import db_models
 from .modules import lots_pool
 from .modules import tg_group
 from .modules.parse_incoming import ParseIncoming
+
+from .modules import redmine
+from .modules import redmine_keys
 
 bless = 461302625
 owen = 574164683
@@ -202,6 +206,27 @@ def message():
         } 
 
     Post('sendMessage', data)
+    return jsonify({'res': 'success'})
+
+
+@app.route("/redmineUpdater", methods=['POST'])
+def redmine_hook():
+    data = request.get_json()
+    for commit in data['commits']:
+        username = commit['committer']['username']
+        key = redmine_keys.keys[username.lower()]
+        key = key if key else redmine_keys['blessma'] 
+        message = commit['message']
+        found = re.search(r'#\d+', message)
+        if found:
+            idx = found.span()
+            number = message[ idx[0] + 1 : idx[1] ]
+            notes = message[ idx[1] : ]
+
+            redmine.issueUpdater(number, key=key, notes=notes)
+
+            print('redmine', username, key)
+
     return jsonify({'res': 'success'})
 
 

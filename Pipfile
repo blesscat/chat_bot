@@ -17,6 +17,7 @@ openpyxl = "*"
 gunicorn = "*"
 ipdb = "*"
 selenium = "*"
+python-redmine = "*"
 
 [requires]
 python_version = "3.7"
