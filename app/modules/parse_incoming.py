@@ -49,6 +49,7 @@ class ParseIncoming():
     def chat(self):
         if ('chat' in self.message):
             return self.message['chat']
+        return {}
 
     @property
     def message_id(self):
@@ -59,6 +60,33 @@ class ParseIncoming():
     def chat_id(self):
         if ('id' in self.chat):
             return self.chat['id']
+
+    @property
+    def reply_to_message(self):
+        if ('reply_to_message' in self.message):
+            return self.message['reply_to_message']
+        return {}
+
+    @property
+    def reply_from(self):
+        if ('from' in self.reply_to_message):
+            return self.reply_to_message['from']
+        return {}
+
+    @property
+    def reply_from_id(self):
+        if ('id' in self.reply_from):
+            return self.reply_from['id']
+        return {}
+
+    @property
+    def reply_from_name(self):
+        if ('first_name' in self.reply_from):
+            return '{} {}'.format(
+                self.reply_from['first_name'],
+                self.reply_from['last_name']
+            )
+        return {}
 
     @property
     def message(self):
@@ -129,6 +157,16 @@ class ParseIncoming():
     def isOCR(self):
         if (self.text):
             return self.text.startswith('OCR ', 0, 4)
+
+    @property
+    def isBan(self):
+        if (self.text):
+            return self.text.startswith('/ban', 0, 4)
+
+    @property
+    def isUnban(self):
+        if (self.text):
+            return self.text.startswith('/unban', 0, 6)
 
     def getLunch(self):
         return random.choice(lunch_pool)

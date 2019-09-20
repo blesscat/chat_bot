@@ -9,6 +9,15 @@ class Beauty(db.Model):
         self.url = url
 
 
+class Ban(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    chat_id = db.Column(db.Integer)   
+    user_id = db.Column(db.Integer)
+    
+    def __init__(self, chat_id, user_id):
+        self.chat_id = chat_id
+        self.user_id = user_id
+
 class Launch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text)

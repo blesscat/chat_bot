@@ -17,12 +17,6 @@ from .modules import redmine
 from .modules import redmine_keys
 
 bless = 461302625
-owen = 574164683
-nordy = 558029648
-
-# banList = [owen, nordy]
-banList = []
-
 
 def Test(incom):
     doc = 'https://blesscat.github.io/images/lots/A1.gif'
@@ -56,6 +50,64 @@ def Ocr(incom):
         'chat_id': incom.chat_id,
         'reply_to_message_id': incom.message_id,
         'text': res
+    }
+    
+    Post('sendMessage', data)
+
+def isBanned(incom):
+    banned = db_models.Ban.query.filter_by(
+        chat_id=incom.chat_id,
+        user_id=incom.from_id
+    ).all()
+    return bool(banned)
+
+def unbanUser(incom):
+    if incom.from_id != bless: return
+    banID = incom.reply_from_id
+    banned = db_models.Ban.query.filter_by(
+        chat_id=incom.chat_id,
+        user_id=incom.reply_from_id
+    ).all()
+
+    if banned:
+        db.session.delete(banned[0])
+        db.session.commit()
+        text = '{}已放出'.format(incom.reply_from_name)
+    else:
+        text = '{}並沒有水桶，要浸嗎？'.format(incom.reply_from_name)
+
+    data = {
+        'chat_id': incom.chat_id,
+        'reply_to_message_id': incom.message_id,
+        'text': text
+    }
+    
+    Post('sendMessage', data)
+
+def banUser(incom):
+    if incom.from_id != bless: return
+    banID = incom.reply_from_id
+    banned = db_models.Ban.query.filter_by(
+        chat_id=incom.chat_id,
+        user_id=incom.reply_from_id
+    ).all()
+
+    if banned:
+        text = '{}早就水桶了'.format(incom.reply_from_name)
+    else:
+        ban = db_models.Ban(
+            chat_id=incom.chat_id,
+            user_id=incom.reply_from_id
+        )
+        db.session.add(ban)
+        db.session.commit()
+
+        text = '{}已ban貼圖'.format(incom.reply_from_name)
+
+    data = {
+        'chat_id': incom.chat_id,
+        'reply_to_message_id': incom.message_id,
+        'text': text
     }
     
     Post('sendMessage', data)
@@ -172,13 +224,18 @@ def telegram():
         drawLots(incoming)
     elif incoming.isOCR:
         Ocr(incoming)
-    elif incoming.from_id in banList:
+    elif incoming.isBan:
+        banUser(incoming)
+    elif incoming.isUnban:
+        unbanUser(incoming)
+
+    elif isBanned(incoming):
         if incoming.isSticker or incoming.isDoc:
             DelMsg(incoming)
     # elif incoming.isTest:
     #     Test(incoming)
 
-    return ''
+    return jsonify({'res': 'success'})
 
 
 @app.route("/message", methods=['POST'])
@@ -212,15 +269,16 @@ def message():
 @app.route("/redmineUpdater", methods=['POST'])
 def redmine_hook():
     data = request.get_json()
+    print(data)
     for commit in data['commits']:
         username = commit['committer']['username']
         key = redmine_keys.keys[username.lower()]
         key = key if key else redmine_keys['blessma'] 
         message = commit['message']
-        found = re.search(r'#\d+', message)
+        found = re.search(r'\[#\d+\]', message)
         if found:
             idx = found.span()
-            number = message[ idx[0] + 1 : idx[1] ]
+            number = message[ idx[0] + 2 : idx[1] - 1]
             notes = message[ idx[1] : ]
 
             redmine.issueUpdater(number, key=key, notes=notes)
@@ -263,6 +321,7 @@ def gqLaunch():
         db.session.commit()
 
         return jsonify({'res': 'success'})
+
 
 @app.route("/setLaunch", methods=['GET', 'POST'])
 def setLaunch():
