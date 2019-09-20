@@ -28,6 +28,7 @@ class Launch(db.Model):
             'longitude': self.longitude,
         }
 
+
 class GqLaunch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text)

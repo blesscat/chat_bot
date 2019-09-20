@@ -74,9 +74,8 @@ class ParseIncoming():
     
     @property
     def isMp4(self):
-        if ('mime_type' in self.document) :
+        if ('mime_type' in self.document):
             return self.document['mime_type'] == 'video/mp4'
-
 
     @property
     def isDoc(self):
