@@ -16,6 +16,7 @@ py-trello = "*"
 openpyxl = "*"
 gunicorn = "*"
 ipdb = "*"
+selenium = "*"
 
 [requires]
 python_version = "3.7"
