@@ -229,8 +229,8 @@ def telegram():
     elif incoming.isUnban:
         unbanUser(incoming)
 
-    elif isBanned(incoming):
-        if incoming.isSticker or incoming.isDoc:
+    elif incoming.isSticker or incoming.isDoc:
+        if isBanned(incoming):
             DelMsg(incoming)
     # elif incoming.isTest:
     #     Test(incoming)
@@ -275,14 +275,20 @@ def redmine_hook():
         key = redmine_keys.keys[username.lower()]
         key = key if key else redmine_keys['blessma'] 
         message = commit['message']
-        found = re.search(r'\[#\d+\]', message)
-        if found:
-            idx = found.span()
-            number = message[ idx[0] + 2 : idx[1] - 1]
-            notes = message[ idx[1] : ]
+        pattern = r"\[?(#\d+)\]?"
+        numbers = []
+        end = 0
 
-            redmine.issueUpdater(number, key=key, notes=notes)
+        for match in re.finditer(pattern, message):
+            number = re.search(r"\d+", match.group()).group()
+            numbers.append(number)
+            end = match.end()
+            pass
+        
+        notes = message[end: ]
 
+        for num in numbers:
+            redmine.issueUpdater(num, key=key, notes=notes)
             print('redmine', username, key)
 
     return jsonify({'res': 'success'})
