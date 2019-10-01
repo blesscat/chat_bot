@@ -1,4 +1,5 @@
 import re
+import os
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -45,9 +46,11 @@ class BeautyCrawler(Command):
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--disable-gpu')
 
+        path = os.path.abspath('./chromedriver')
         self.driver = webdriver.Chrome(
             chrome_options=chrome_options,
-            executable_path='/usr/local/bin/chromedriver')
+            executable_path='/Users/frontend/bot/app/modules/chromedriver'
+        )
 
         base_url = 'https://www.ptt.cc/bbs/Beauty/index.html'
         self.driver.get(base_url)

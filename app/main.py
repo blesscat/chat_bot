@@ -13,6 +13,8 @@ from .modules import lots_pool
 from .modules import tg_group
 from .modules.parse_incoming import ParseIncoming
 
+from .modules.redmine_webhook_parser import RedmineWebhookParser
+
 from .modules import redmine
 from .modules import redmine_keys
 
@@ -63,6 +65,7 @@ def isBanned(incom):
 
 def unbanUser(incom):
     if incom.from_id != bless: return
+    if not incom.reply_from_id: return
     banID = incom.reply_from_id
     banned = db_models.Ban.query.filter_by(
         chat_id=incom.chat_id,
@@ -86,6 +89,7 @@ def unbanUser(incom):
 
 def banUser(incom):
     if incom.from_id != bless: return
+    if not incom.reply_from_id: return
     banID = incom.reply_from_id
     banned = db_models.Ban.query.filter_by(
         chat_id=incom.chat_id,
@@ -263,6 +267,38 @@ def message():
         } 
 
     Post('sendMessage', data)
+    return jsonify({'res': 'success'})
+
+
+@app.route("/redmineReceiver", methods=['POST'])
+def redmine_receiver():
+    received = request.get_json()
+    incom = RedmineWebhookParser(received)
+    notify = bool(incom.assignee_name == 'xiaoxuan' or incom.assignee_name == 'vseven')
+
+    if not notify:
+        return jsonify({'res': 'success'})
+
+    chat_id = tg_group.name['sport_official']
+    name = '@Vsenver' if incom.assignee_name == 'vseven' else incom.assignee_name
+    text = '''
+URL: http://redmine.lianfa.co/issues/{id}\r
+议题: {subject}\r
+状态: {status}\r
+被分派者: {name}\r
+    '''.format(
+        id=incom.issue_id,
+        subject=incom.subject,
+        status=incom.status_name,
+        name=name
+    )
+
+    data = {
+        'chat_id': chat_id,
+        'text': text
+    }
+    Post('sendMessage', data)
+
     return jsonify({'res': 'success'})
 
 

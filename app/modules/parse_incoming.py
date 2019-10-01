@@ -81,10 +81,16 @@ class ParseIncoming():
 
     @property
     def reply_from_name(self):
+        if ('username' in self.reply_from):
+            return self.reply_from['username']
         if ('first_name' in self.reply_from):
+            if 'last_name' in self.reply_from['']:
+                lastName = self.reply_from['last_name']
+            else:
+                lastName = ''
             return '{} {}'.format(
                 self.reply_from['first_name'],
-                self.reply_from['last_name']
+                lastName
             )
         return {}
 
