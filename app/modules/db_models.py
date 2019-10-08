@@ -9,6 +9,13 @@ class Beauty(db.Model):
         self.url = url
 
 
+class Commit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    commitID = db.Column(db.Text)
+
+    def __init__(self, commitID):
+        self.commitID = commitID
+
 class Ban(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     chat_id = db.Column(db.Integer)   

@@ -280,6 +280,7 @@ def redmine_receiver():
         return jsonify({'res': 'success'})
 
     chat_id = tg_group.name['sport_official']
+    # chat_id = tg_group.name['sport']
     name = '@Vsenver' if incom.assignee_name == 'vseven' else incom.assignee_name
     text = '''
 URL: http://redmine.lianfa.co/issues/{id}\r
@@ -302,15 +303,24 @@ URL: http://redmine.lianfa.co/issues/{id}\r
     return jsonify({'res': 'success'})
 
 
-@app.route("/redmineUpdater", methods=['POST'])
-def redmine_hook():
-    data = request.get_json()
-    print(data)
+def HandlePushEvent(data):
+    issues = []
     for commit in data['commits']:
-        username = commit['committer']['username']
+        username = commit['author']['username']
+        if username.lower() not in redmine_keys.keys: continue
+
         key = redmine_keys.keys[username.lower()]
-        key = key if key else redmine_keys['blessma'] 
         message = commit['message']
+
+        commitID = commit['id']
+        hasCommitted = db_models.Commit.query.filter_by(commitID=commitID).all()
+        if hasCommitted:
+            continue
+        else:
+            commit = db_models.Commit(commitID)
+            db.session.add(commit)
+            db.session.commit()
+
         pattern = r"\[?(#\d+)\]?"
         numbers = []
         end = 0
@@ -319,15 +329,78 @@ def redmine_hook():
             number = re.search(r"\d+", match.group()).group()
             numbers.append(number)
             end = match.end()
-            pass
         
         notes = message[end: ]
+        issues.extend(numbers)
 
         for num in numbers:
             redmine.issueUpdater(num, key=key, notes=notes)
             print('redmine', username, key)
 
+    if issues:
+        team = request.args.get('team')
+        chat_id = tg_group.name['redmine_notify']
+        text = 'team: {team}\n{numbers} has been updated on redmine.'.format(
+            team=team,
+            numbers=', '.join('#{}'.format(num) for num in issues)
+        )
+        data = {
+            'chat_id': chat_id,
+            'text': text
+        }
+        Post('sendMessage', data)
+
+
+def HandlePrEvent(data):
+    team = request.args.get('team')
+    if team not in tg_group.name: return
+
+    chat_id = tg_group.name[team]
+    action = data['action']
+    number = data['number']
+    name = data['repository']['name']
+    pr = data['pull_request']
+    creator = pr['user']['username']
+    assignees = [ '@{}'.format(assignee['username']) for assignee in pr['assignees'] ]
+    url = data['repository']['html_url']
+    text = '''
+pull request\r
+repository: {name}\r
+URL: {url}/pulls/{number}\r
+creator: {creator}\r
+action: {action}\r
+assignees: {assignees}\r
+    '''.format(
+        url=url,
+        name=name,
+        number=number,
+        action=action,
+        creator=creator,
+        assignees=', '.join(assignees)
+    )
+
+    data = {
+        'chat_id': chat_id,
+        'text': text 
+    }
+    Post('sendMessage', data)
+
+    
+
+@app.route("/redmineUpdater", methods=['POST'])
+def redmine_hook():
+    data = request.get_json()
+    print(request.args.get('team'))
+    print(request.headers.get('X-GitHub-Event'))
+    print(data)
+    event = request.headers.get('X-GitHub-Event') 
+    if event == 'push':
+        HandlePushEvent(data)
+    elif event == 'pull_request':
+        HandlePrEvent(data)
+
     return jsonify({'res': 'success'})
+
 
 
 @app.route("/ocr", methods=['POST'])

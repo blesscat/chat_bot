@@ -4,4 +4,5 @@ name = {
     'sport': -355324332,
     'sport_official': -301035081,
     'h5': -1001152596665,
+    'redmine_notify': -394560254,
 }
