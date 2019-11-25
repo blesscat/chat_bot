@@ -25,6 +25,17 @@ class Ban(db.Model):
         self.chat_id = chat_id
         self.user_id = user_id
 
+class Pr(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    location = db.Column(db.Text)
+    status = db.Column(db.Text)
+    message = db.Column(db.Text)
+    
+    def __init__(self, location, status, message):
+        self.location = location
+        self.status = status
+        self.message = message
+
 class Launch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text)

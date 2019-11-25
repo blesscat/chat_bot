@@ -9,6 +9,7 @@ DEV_TOKEN = "718901828:AAFWTD6weU4c9KHrbpkmTd9Y-RRClVpSZXQ"
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///./app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['TELEGRAM_TOKEN'] = TOKEN
 
 db = SQLAlchemy(app)
 

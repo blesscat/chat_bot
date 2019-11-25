@@ -1,0 +1,118 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Set Launch</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.0/css/bulma.min.css" />
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <div id="app" class="section">
+        <label class="label">名字</label>
+        <p class="control">
+          <input class="input" type="text" v-model="name"/>
+        </p>
+        <label class="label">緯度</label>
+        <p class="control">
+          <input class="input" type="number" v-model="latitude"/>
+        </p>
+        <label class="label">經度</label>
+        <p class="control">
+          <input class="input" type="number" v-model="longitude"/>
+        </p>
+
+        <input type="hidden" name="url">
+        <br/>
+        <div class="control is-grouped">
+          <p class="control">
+            <button class="button is-primary" @click="setLaunch" :disabled="loading">新增</button>
+          </p>
+        </div>
+        <br/>
+        <div class="items">
+          <span> ID </span>
+          <span> 名字 </span>
+          <span> 緯度 </span>
+          <span> 經度 </span>
+        </div>
+        <div v-for="item in launchs" class="items">
+          <span> ${ item.id } </span>
+          <span> ${ item.name } </span>
+          <span> ${ item.latitude } </span>
+          <span> ${ item.longitude } </span>
+        </div>
+    </div>
+  </div>
+  <script>
+    const Launchs = {{ my_list|tojson|safe }}
+    const address = '{{ address }}'
+    
+    new Vue({
+      el: '#app',
+      delimiters: ['${', '}'],
+      data: {
+	loading: false,
+        name: '',
+        latitude: '',
+        longitude: '',
+        launchs: Launchs
+      },
+      computed: {
+        bot_url() {
+          return `${this.name} ${this.latitude} ${this.longitude}`
+        }
+      },
+      methods: {
+        async setLaunch() {
+	  this.loading = true
+		const res = await fetch(`http://frontend.com:5000/${address}`, {
+            headers: { 'content-type': 'application/json' },
+            method: 'POST',
+            body: JSON.stringify({ 
+              name: this.name,
+              latitude: this.latitude,
+              longitude: this.longitude
+            }),
+          }).then(res => res.json())
+	  this.loading = false
+
+          if (res.res === 'success') this.launchs.push({
+              id: '',
+              name: this.name,
+              latitude: this.latitude,
+              longitude: this.longitude
+          })
+
+        }
+      }
+    }
+
+    )
+  </script>
+  <style>
+  .items {
+    display: flex;
+    justify-content: space-around;
+    color: #333333;
+  }
+  .items > span:first-child {
+    width: 40px;
+  }
+  .items > span:nth-child(2) {
+    width: 100px;
+  }
+  .items > span {
+    width: 120px;
+  }
+  .items:nth-child(2n) {
+    background-color: #cccccc
+  }
+  </style>
+</body>
+
+</html>

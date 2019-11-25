@@ -174,6 +174,11 @@ class ParseIncoming():
         if (self.text):
             return self.text.startswith('/unban', 0, 6)
 
+    @property
+    def isPr(self):
+        if (self.text):
+            return self.text.startswith('/lspr')
+
     def getLunch(self):
         return random.choice(lunch_pool)
 

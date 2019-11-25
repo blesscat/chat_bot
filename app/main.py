@@ -4,7 +4,7 @@ import random
 import time
 import requests
 import subprocess
-from flask import request, render_template, jsonify
+from flask import request, render_template, jsonify, current_app, send_from_directory, make_response
 from sqlalchemy.sql import func
 
 from . import app, db, TOKEN, DEV_TOKEN
@@ -17,6 +17,8 @@ from .modules.redmine_webhook_parser import RedmineWebhookParser
 
 from .modules import redmine
 from .modules import redmine_keys
+
+import xmltodict
 
 bless = 461302625
 
@@ -115,6 +117,20 @@ def banUser(incom):
     }
     
     Post('sendMessage', data)
+
+def prNotify(incom):
+    onGoing = db_models.Pr.query.filter(db_models.Pr.status!='closed').all()
+    text = ', \r\n'.join(str(pr.location) for pr in onGoing)
+    text = '{} \r\n\r\n are still on going.'.format(text)
+    
+    data = {
+        'chat_id': incom.chat_id,
+        'reply_to_message_id': incom.message_id,
+        'text': text
+    }
+    
+    Post('sendMessage', data)
+
 
 def DelMsg(incom):
     data = {
@@ -232,8 +248,11 @@ def telegram():
         banUser(incoming)
     elif incoming.isUnban:
         unbanUser(incoming)
+    elif incoming.isPr:
+        prNotify(incoming)
 
-    elif incoming.isSticker or incoming.isDoc:
+    # elif incoming.isSticker or incoming.isDoc:
+    elif incoming.isSticker:
         if isBanned(incoming):
             DelMsg(incoming)
     # elif incoming.isTest:
@@ -274,14 +293,20 @@ def message():
 def redmine_receiver():
     received = request.get_json()
     incom = RedmineWebhookParser(received)
-    notify = bool(incom.assignee_name == 'xiaoxuan' or incom.assignee_name == 'vseven')
+    notify = bool(incom.assignee_name == 'xiaoxuan'
+                  or incom.assignee_name == 'vseven'
+                  or incom.assignee_name == 'allen'
+                  or incom.assignee_name == 'dns'
+              )
 
+    print('redmine receiver', incom)
     if not notify:
         return jsonify({'res': 'success'})
 
     chat_id = tg_group.name['sport_official']
     # chat_id = tg_group.name['sport']
     name = '@Vsenver' if incom.assignee_name == 'vseven' else incom.assignee_name
+    name = '@Dennis_cute' if incom.assignee_name == 'dns' else incom.assignee_name
     text = '''
 URL: http://redmine.lianfa.co/issues/{id}\r
 议题: {subject}\r
@@ -307,7 +332,9 @@ def HandlePushEvent(data):
     issues = []
     for commit in data['commits']:
         username = commit['author']['username']
-        if username.lower() not in redmine_keys.keys: continue
+        if username.lower() not in redmine_keys.keys:
+            username = commit['author']['name']
+            if username.lower() not in redmine_keys.keys: continue
 
         key = redmine_keys.keys[username.lower()]
         message = commit['message']
@@ -361,23 +388,39 @@ def HandlePrEvent(data):
     name = data['repository']['name']
     pr = data['pull_request']
     creator = pr['user']['username']
-    assignees = [ '@{}'.format(assignee['username']) for assignee in pr['assignees'] ]
+    sender = data['sender']['username']
+    if pr['assignees']:
+        assignees = [ '@{}'.format(assignee['username']) for assignee in pr['assignees'] ]
+    else:
+        assignees = None
     url = data['repository']['html_url']
+    location ='{url}/pulls/{number}'.format(url=url, number=number)
     text = '''
 pull request\r
 repository: {name}\r
-URL: {url}/pulls/{number}\r
-creator: {creator}\r
+sender: {sender}\r
+URL: {location}\r
 action: {action}\r
 assignees: {assignees}\r
     '''.format(
-        url=url,
         name=name,
-        number=number,
         action=action,
-        creator=creator,
-        assignees=', '.join(assignees)
+        sender=sender,
+        location=location,
+        assignees=', '.join(assignees) if assignees else None
     )
+
+    found = db_models.Pr.query.filter_by(location=location).first()
+    if (found):
+        if action == 'closed':
+            db.session.delete(found)
+        else:
+            found.status = action
+        db.session.commit()
+    else:
+        pr = db_models.Pr(location, action, text)
+        db.session.add(pr)
+        db.session.commit()
 
     data = {
         'chat_id': chat_id,
@@ -453,3 +496,35 @@ def setLaunch():
         db.session.commit()
 
         return jsonify({'res': 'success'})
+
+
+@app.route("/udid/<udid>", methods=['GET'])
+def udidDisplay(udid):
+    return udid
+
+
+@app.route("/udid/receiver", methods=['POST'])
+def udid():
+    s = request.get_data()
+    decoded = s.decode(errors="ignore")
+    start = decoded.find('<plist')
+    end = decoded.find('</plist')
+    plist = xmltodict.parse(decoded[start:end + 8])
+    print(plist)
+    for i, key in enumerate(plist['plist']['dict']['key']):
+        if key == 'UDID':
+            idx = i
+    response = make_response('hello', 301)
+    location = 'https://blesstest.lianfa.co/udid/{}'.format(
+        plist['plist']['dict']['string'][idx]
+    )
+    response.headers['Location'] = location
+    return response
+
+@app.route("/udid/profile", methods=['GET'])
+def downloadProfile():
+    path = os.path.join(current_app.root_path, 'files')
+    return send_from_directory(path,
+                               filename="umbilical.mobileconfig",
+                               as_attachment=True 
+                               )

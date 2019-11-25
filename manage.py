@@ -32,11 +32,13 @@ def make_shell_context():
         launch=db_models.Launch,
         gq=db_models.GqLaunch,
         ban=db_models.Ban,
+        pr=db_models.Pr,
         commit=db_models.Commit
     )
 
 
 manager.add_command('update-beauty', BeautyCrawler())
+manager.add_command('pr-status', BeautyCrawler())
 
 
 if __name__ == '__main__':
